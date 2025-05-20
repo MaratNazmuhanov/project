@@ -2,7 +2,7 @@ from masks import get_mask_account, get_mask_card_number
 
 
 def mask_account_card(info_string: str) -> str | None:
-    """Функция для бработки строки и возврата маскированного номера"""
+    """Функция для обработки строки и возврата маскированного номера"""
     parts = info_string.split()
     number_str = parts[-1]
     account_type = " ".join(parts[:-1])
