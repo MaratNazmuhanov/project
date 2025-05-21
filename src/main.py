@@ -3,7 +3,14 @@ from widget import mask_account_card, get_date
 from processing import filter_by_state, sort_by_date
 
 
-def main():
+def main() -> None:
+    """
+     Основная функция программы, реализующая последовательность взаимодействия с пользователем:
+    - ввод данных для маскировки номера карты и счета;
+    - обработка строк с информацией о карте и счете;
+    - форматирование даты;
+    - демонстрация фильтрации и сортировки списка транзакций.
+    """
     # Запрос у пользователя данных для номера карты
     card_number_input = input("Введите номер карты (16 цифр): ").strip()
     if not card_number_input.isdigit() or len(card_number_input) != 16:
