@@ -14,4 +14,3 @@ def sort_by_date(records: List[Dict[str, Any]], descending: bool = True) -> List
     """
     # Используем функцию sorted() с ключом, преобразующим дату в формат, сравнимый по времени
     return sorted(records, key=lambda x: x.get('date', ''), reverse=descending)
-
