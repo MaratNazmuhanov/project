@@ -1,16 +1,28 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Optional
 
 
-def filter_by_state(records: List[Dict[str, Any]], state: str = 'EXECUTED') -> List[Dict[str, Any]]:
+def filter_by_state(
+        data: List[Dict],
+        state: str = 'EXECUTED'
+) -> List[Dict]:
     """
-    Возвращает новый список словарей, у которых ключ 'state' равен указанному значению.
+    Фильтрует список словарей по значению ключа 'state'.
     """
-    return [record for record in records if record.get('state') == state]
+    filtered_list = [item for item in data if item.get('state') == state]
+    return filtered_list
 
 
-def sort_by_date(records: List[Dict[str, Any]], descending: bool = True) -> List[Dict[str, Any]]:
+def sort_by_date(
+        data: List[Dict],
+        reverse: bool = True
+) -> List[Dict]:
     """
-    Возвращает новый список словарей, отсортированный по ключу 'date'.
+    Сортирует список словарей по дате в порядке убывания или возрастания.
     """
-    # Используем функцию sorted() с ключом, преобразующим дату в формат, сравнимый по времени
-    return sorted(records, key=lambda x: x.get('date', ''), reverse=descending)
+    # Используем сортировку по ключу 'date'
+    sorted_list = sorted(
+        data,
+        key=lambda item: item.get('date', ''),
+        reverse=reverse
+    )
+    return sorted_list
