@@ -1,10 +1,7 @@
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 
-def filter_by_state(
-        data: List[Dict],
-        state: str = 'EXECUTED'
-) -> List[Dict]:
+def filter_by_state(data: List[Dict], state: str = 'EXECUTED') -> List[Dict]:
     """
     Фильтрует список словарей по значению ключа 'state'.
     """
@@ -12,10 +9,7 @@ def filter_by_state(
     return filtered_list
 
 
-def sort_by_date(
-        data: List[Dict],
-        reverse: bool = True
-) -> List[Dict]:
+def sort_by_date(data: List[Dict], reverse: bool = True) -> List[Dict]:
     """
     Сортирует список словарей по дате в порядке убывания или возрастания.
     """
