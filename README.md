@@ -24,12 +24,14 @@ test_poetry/
 ├── src/                          # Исходный код
 │   ├── masks.py                  # Маскировка номеров карт и счетов
 │   ├── widget.py                 # Обработка строк и форматирование дат
+│   ├── generators.py             # Генерация данных
 │   ├── processing.py             # Фильтрация и сортировка данных
 │   └── main.py                   # Пример использования
 ├── tests/                        # Тесты
 │   ├── conftest.py              # Фикстуры pytest (15+ фикстур)
 │   ├── test_masks.py            # Тесты маскировки (30+ тестов)
 │   ├── test_widget.py           # Тесты виджетов (25+ тестов)
+│   ├── test_generators.py       # Тесты генераторов
 │   └── test_processing.py       # Тесты обработки (50+ тестов)
 ├── pyproject.toml               # Конфигурация Poetry и инструментов
 ├── lint.py                      # Скрипт проверки качества кода
@@ -54,7 +56,7 @@ poetry install --with lint
 ### Запуск примера
 
 ```bash
-python src/main.py
+  python src/main.py
 ```
 
 ## 📖 Примеры использования
