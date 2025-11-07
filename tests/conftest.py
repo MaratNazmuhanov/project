@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Tuple, Union, cast
+from typing import Any, Dict, List, Tuple, Union, cast
 
 import pytest
-
-from src.generators import filter_by_currency
 
 # ============================================================================
 # ФИКСТУРЫ ДЛЯ МОДУЛЯ MASKS
@@ -231,20 +229,47 @@ def sort_order_data(request: pytest.FixtureRequest) -> Tuple[bool, List[str]]:
 
 
 @pytest.fixture
-def sample_transactions() -> List[Dict]:
-    """Фикстура: список тестовых транзакций."""
+def sample_transactions() -> List[Dict[str, Any]]:
+    """Фикстура: набор тестовых транзакций с разными валютами."""
     return [
-        {"amount": 100.0, "currency": "USD", "description": "Обед"},
-        {"amount": 50.0, "currency": "EUR", "description": "Кофе"},
-        {"amount": 200.0, "currency": "USD", "description": "Ужин"},
-        {"amount": 75.5, "currency": "GBP", "description": "Кино"},
+        {
+            "id": 1,
+            "state": "EXECUTED",
+            "date": "2023-01-01T10:00:00",
+            "operationAmount": {"amount": "1000.00", "currency": {"name": "USD", "code": "USD"}},
+            "description": "Оплата услуг",
+        },
+        {
+            "id": 2,
+            "state": "EXECUTED",
+            "date": "2023-01-02T11:00:00",
+            "operationAmount": {"amount": "2000.00", "currency": {"name": "EUR", "code": "EUR"}},
+            "description": "Перевод",
+        },
+        {
+            "id": 3,
+            "state": "PENDING",
+            "date": "2023-01-03T12:00:00",
+            "operationAmount": {"amount": "3000.00", "currency": {"name": "USD", "code": "USD"}},
+            "description": "Ожидает подтверждения",
+        },
+        # Транзакция без operationAmount
+        {"id": 4, "state": "EXECUTED", "date": "2023-01-04T13:00:00", "description": "Без суммы"},
+        # Транзакция с operationAmount, но без currency
+        {
+            "id": 5,
+            "state": "EXECUTED",
+            "date": "2023-01-05T14:00:00",
+            "operationAmount": {"amount": "4000.00"},
+            "description": "Без валюты",
+        },
     ]
 
 
 @pytest.fixture
-def usd_transactions(sample_transactions: List[Dict]) -> Generator[Dict[str, float], None, None]:
-    """Фикстура: фильтрованные транзакции в долларах."""
-    return filter_by_currency(sample_transactions, "USD")
+def empty_transactions() -> List[Dict[str, Any]]:
+    """Фикстура: пустой список транзакций."""
+    return []
 
 
 @pytest.fixture

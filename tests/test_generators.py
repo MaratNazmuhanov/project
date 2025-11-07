@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, Iterator, List
 
 import pytest
 
@@ -6,31 +6,219 @@ from src.generators import card_number_generator, filter_by_currency, transactio
 
 
 @pytest.mark.parametrize(
-    "transaction, expected_description",
+    ("transactions", "expected"),
     [
-        ({"amount": 100.0, "currency": "USD", "description": "Обед"}, "Обед"),
-        ({"amount": 200.0, "currency": "USD", "description": "Ужин"}, "Ужин"),
+        # Случай 1: нормальные транзакции с описанием
+        (
+            [{"description": "Перевод организации"}, {"description": "Перевод со счета на счет"}],
+            ["Перевод организации", "Перевод со счета на счет"],
+        ),
+        # Случай 2: транзакции без описания
+        (
+            [{"id": 1}, {"amount": 100}],
+            ["", ""],
+        ),
+        # Случай 3: смешанные транзакции
+        (
+            [{"description": "Оплата услуг"}, {"id": 999}, {"description": "Поступление"}],
+            ["Оплата услуг", "", "Поступление"],
+        ),
+        # Случай 4: пустой список
+        ([], []),
+        # Случай 5: одна транзакция с описанием
+        ([{"description": "Единственный перевод"}], ["Единственный перевод"]),
+        # Случай 6: одна транзакция без описания
+        ([{"id": 1}], [""]),
+        # Случай 7: полностью пустые словари
+        ([{}, {}, {}], ["", "", ""]),
     ],
 )
-def test_transaction_descriptions(transaction: Dict[str, Optional[float]], expected_description: str) -> None:
-    """Тест: проверка генератора описаний транзакций."""
-    descriptions = list(transaction_descriptions([transaction]))
-    assert descriptions[0] == f"Транзакция: {expected_description}"
+def test_transaction_descriptions_parametrized(
+    transactions: List[Dict[str, Any]],
+    expected: List[str],
+) -> None:
+    """
+    Параметризованный тест для функции transaction_descriptions.
+
+    Проверяет различные сценарии:
+    - Нормальные транзакции с описанием
+    - Транзакции без поля description
+    - Смешанные случаи
+    - Пустой список
+    - Одиночные транзакции
+    - Полностью пустые словари
+    """
+    descriptions = transaction_descriptions(transactions)
+    result = list(descriptions)
+
+    assert result == expected
 
 
-@pytest.mark.parametrize("start, end, expected_count", [(1, 3, 3), (1000, 1005, 6)])
-def test_card_number_generator(start: int, end: int, expected_count: int) -> None:
-    """Тест: проверка генератора банковских карт."""
-    card_numbers = list(card_number_generator(start, end))
-    assert len(card_numbers) == expected_count
+@pytest.mark.parametrize(
+    ("transactions", "expected_first", "expected_second"),
+    [
+        (
+            [
+                {"description": "Оплата услуг"},
+                {"description": "Без валюты"},
+            ],
+            "Оплата услуг",
+            "Без валюты",
+        ),
+        (
+            [
+                {"description": "Перевод организации"},
+                {"description": "Поступление"},
+            ],
+            "Перевод организации",
+            "Поступление",
+        ),
+    ],
+)
+def test_transaction_descriptions_lazy_evaluation(
+    transactions: List[Dict[str, Any]], expected_first: str, expected_second: str
+) -> None:
+    """Тест: ленивая оценка — генератор должен выдавать значения по запросу."""
+    descriptions = transaction_descriptions(transactions)
 
-    # Проверяем форматирование
-    for number in card_numbers:
-        assert len(number.replace(" ", "")) == 16
+    first = next(descriptions)
+    second = next(descriptions)
+
+    assert first == expected_first
+    assert second == expected_second
 
 
-def test_filter_by_currency_with_fixture(sample_transactions: List[Dict[str, float]]) -> None:
-    """Тест: проверка фильтрации транзакций по валюте с использованием фикстуры."""
-    usd_transactions = filter_by_currency(sample_transactions, "USD")
+def test_transaction_descriptions_empty_list(empty_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: пустой список транзакций — должен вернуть пустой итератор."""
+    descriptions = transaction_descriptions(empty_transactions)
+    result = list(descriptions)
+    assert len(result) == 0
 
-    assert len(list(usd_transactions)) == 2
+
+@pytest.mark.parametrize(
+    ("start", "end", "expected"),
+    [
+        # ... другие случаи ...
+        # Случай 3: диапазон с переходом через разряд (корректный)
+        (
+            9999999999999998,
+            9999999999999999,  # ← Только до 9 999 999 999 999 999!
+            [
+                "9999 9999 9999 9998",
+                "9999 9999 9999 9999",
+            ],
+        ),
+    ],
+)
+def test_card_number_generator_valid_ranges(start: int, end: int, expected: List[str]) -> None:
+    generator: Iterator[str] = card_number_generator(start, end)
+    result: List[str] = list(generator)
+    assert result == expected
+
+
+def test_card_number_generator_empty_range() -> None:
+    """Тест: start > end — должен вызвать ValueError."""
+    with pytest.raises(ValueError, match="start не может быть больше end"):
+        list(card_number_generator(5, 1))
+
+
+def test_card_number_generator_start_out_of_range() -> None:
+    """Тест: start < 1 — должен вызвать ValueError."""
+    with pytest.raises(ValueError, match="start должен быть в диапазоне"):
+        list(card_number_generator(0, 5))
+
+
+def test_card_number_generator_end_out_of_range() -> None:
+    """Тест: end > 9999999999999999 — должен вызвать ValueError."""
+    with pytest.raises(ValueError, match="end должен быть в диапазоне"):
+        list(card_number_generator(1, 10000000000000000))
+
+
+def test_card_number_generator_lazy_evaluation() -> None:
+    """Тест: ленивая оценка — генератор должен выдавать значения по запросу."""
+    generator = card_number_generator(1, 3)
+
+    # Получаем только первое значение
+    first = next(generator)
+    assert first == "0000 0000 0000 0001"
+
+    # Получаем второе значение
+    second = next(generator)
+    assert second == "0000 0000 0000 0002"
+
+    # Останавливаемся, не запрашивая третье
+
+
+def test_filter_usd(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: фильтрация по USD."""
+    usd_iter = filter_by_currency(sample_transactions, "USD")
+    result = list(usd_iter)
+    assert len(result) == 2
+    assert result[0]["id"] == 1
+    assert result[1]["id"] == 3
+
+
+def test_filter_eur(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: фильтрация по EUR."""
+    eur_iter = filter_by_currency(sample_transactions, "EUR")
+    result = list(eur_iter)
+    assert len(result) == 1
+    assert result[0]["id"] == 2
+
+
+def test_filter_rub_no_matches(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: валюта RUB отсутствует — должен вернуть пустой итератор."""
+    rub_iter = filter_by_currency(sample_transactions, "RUB")
+    result = list(rub_iter)
+    assert len(result) == 0
+
+
+def test_empty_list(empty_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: пустой список транзакций."""
+    usd_iter = filter_by_currency(empty_transactions, "USD")
+    result = list(usd_iter)
+    assert len(result) == 0
+
+
+def test_no_operation_amount(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: транзакция без operationAmount пропускается."""
+    usd_iter = filter_by_currency(sample_transactions, "USD")
+    result = list(usd_iter)
+    assert all(t["id"] != 4 for t in result)
+
+
+def test_no_currency_field(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: транзакция с operationAmount, но без currency пропускается."""
+    usd_iter = filter_by_currency(sample_transactions, "USD")
+    result = list(usd_iter)
+    assert all(t["id"] != 5 for t in result)
+
+
+@pytest.mark.parametrize(
+    "currency_code,expected_ids",
+    [
+        ("USD", [1, 3]),
+        ("EUR", [2]),
+        ("RUB", []),
+    ],
+)
+def test_parametrized_filter(
+    sample_transactions: List[Dict[str, Any]], currency_code: str, expected_ids: List[int]
+) -> None:
+    """Параметризованный тест: проверка фильтрации для разных валют."""
+    filtered = filter_by_currency(sample_transactions, currency_code)
+    result_ids = [t["id"] for t in filtered]
+    assert result_ids == expected_ids
+
+
+def test_case_sensitive(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: фильтрация чувствительна к регистру."""
+    usd_lower = filter_by_currency(sample_transactions, "usd")
+    result = list(usd_lower)
+    assert len(result) == 0
+
+
+def test_none_currency_code(sample_transactions: List[Dict[str, Any]]) -> None:
+    """Тест: передача None в качестве кода валюты (ожидается пустой результат)."""
+    result = list(filter_by_currency(sample_transactions, None))  # type: ignore
+    assert len(result) == 0  # Должно вернуть пустой список

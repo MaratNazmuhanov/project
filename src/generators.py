@@ -1,47 +1,80 @@
-from typing import Dict, Generator, List, Optional
+from typing import Any, Dict, Iterator, List
 
 
-def filter_by_currency(transactions: List[Dict[str, float]], currency: str) -> Generator[Dict[str, float], None, None]:
+def filter_by_currency(transactions: List[Dict[str, Any]], currency_code: str) -> Iterator[Dict[str, Any]]:
     """
-    Генератор транзакций с заданной валютой.
+    Фильтрует транзакции по коду валюты.
 
-    Аргументы:
-        transactions: Список словарей с транзакциями.
-        currency: Код валюты (например, 'USD').
+    Args:
+        transactions (list): Список словарей, представляющих транзакции.
+        currency_code (str): Код валюты для фильтрации (например, "USD").
 
-    Возвращает:
-        Генератор, поочередно возвращающий совпадающие транзакции.
+    Yields:
+        dict: Транзакция, где валюта операции соответствует заданной.
     """
     for transaction in transactions:
-        if transaction.get("currency") == currency:
+        # Проверяем, что в транзакции есть поле operationAmount
+        if "operationAmount" not in transaction:
+            continue
+
+        operation_amount = transaction["operationAmount"]
+
+        # Проверяем, что в operationAmount есть поле currency
+        if "currency" not in operation_amount:
+            continue
+
+        currency = operation_amount["currency"]
+
+        # Проверяем соответствие кода валюты
+        if currency.get("code") == currency_code:
             yield transaction
 
 
-def transaction_descriptions(transactions: List[Dict[str, Optional[float]]]) -> Generator[str, None, None]:
+def transaction_descriptions(transactions: list[Dict[str, Any]]) -> Iterator[str]:
     """
-    Генератор описаний транзакций.
+    Извлекает описания транзакций.
 
-    Аргументы:
-        transactions: Список словарей с транзакциями.
+    Для каждой транзакции возвращает:
+    - значение поля "description", если оно есть и не None;
+    - пустую строку "", если поля "description" нет или оно None.
 
-    Возвращает:
-        Генератор строк с описаниями транзакций.
+    Args:
+        transactions: Список транзакций (словарей).
+
+    Yields:
+        Строка с описанием транзакции или пустая строка.
     """
     for transaction in transactions:
-        description = transaction.get("description", "Описание отсутствует")
-        yield f"Транзакция: {description}"
+        description = transaction.get("description")
+        # Если description есть и не None — возвращаем его
+        # Иначе — пустую строку
+        yield "" if description is None else description
 
 
-def card_number_generator(start: int, end: int) -> Generator[str, None, None]:
+def card_number_generator(start: int, end: int) -> Iterator[str]:
     """
-    Генератор банковских карт в формате XXXX XXXX XXXX XXXX.
+    Генератор номеров банковских карт в формате XXXX XXXX XXXX XXXX.
 
-    Аргументы:
-        start: Начальное значение диапазона.
-        end: Конечное значение диапазона.
 
-    Возвращает:
-        Генератор строк с номерами карт.
+    Args:
+        start: Начальное число диапазона (от 1 до 9999999999999999).
+        end: Конечное число диапазона (от 1 до 9999999999999999), должно быть >= start.
+
+
+    Yields:
+        Строка с номером карты в формате "XXXX XXXX XXXX XXXX".
+
+
+    Raises:
+        ValueError: Если start/end вне диапазона [1, 9999999999999999] или start > end.
     """
+    if not (1 <= start <= 9999999999999999):
+        raise ValueError("start должен быть в диапазоне от 1 до 9999999999999999")
+    if not (1 <= end <= 9999999999999999):
+        raise ValueError("end должен быть в диапазоне от 1 до 9999999999999999")
+    if start > end:
+        raise ValueError("start не может быть больше end")
+
     for number in range(start, end + 1):
-        yield f"{number:016d}"
+        num_str = f"{number:016d}"
+        yield f"{num_str[:4]} {num_str[4:8]} {num_str[8:12]} {num_str[12:16]}"
