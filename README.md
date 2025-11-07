@@ -126,6 +126,36 @@ sorted_desc = sort_by_date(transactions, reverse=True)
 print("Последняя транзакция:", sorted_desc[0]['date'])
 ```
 
+### Генераторы финансовых транзакций
+
+```python
+from src.generators import filter_by_currency, transaction_descriptions, card_number_generator
+
+# Список транзакций
+transactions = [
+    {"amount": 100.0, "currency": "USD", "description": "Обед"},
+    {"amount": 50.0, "currency": "EUR", "description": "Кофе"},
+    {"amount": 200.0, "currency": "USD", "description": "Ужин"},
+    {"amount": 75.5, "currency": "GBP", "description": "Кино"}
+]
+
+# Фильтрация транзакций по доллару
+usd_transactions = filter_by_currency(transactions, "USD")
+for transaction in usd_transactions:
+    print(f"Долларовая транзакция: {transaction['description']}")
+
+# Генерация описаний
+descriptions = transaction_descriptions(transactions)
+for desc in descriptions:
+    print(desc)
+
+# Создание карты
+card_gen = card_number_generator(1234, 5678)
+for card_num in card_gen:
+    print(f"Номер карты: {card_num}")
+
+```
+
 ## 🧪 Тестирование
 
 Проект включает комплексное тестирование с использованием современных подходов:

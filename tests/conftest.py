@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, List, Tuple, Union, cast
+from typing import Any, Dict, Generator, List, Tuple, Union, cast
 
 import pytest
+
+from src.generators import filter_by_currency
 
 # ============================================================================
 # ФИКСТУРЫ ДЛЯ МОДУЛЯ MASKS
@@ -228,12 +230,32 @@ def sort_order_data(request: pytest.FixtureRequest) -> Tuple[bool, List[str]]:
 # ============================================================================
 
 
-@pytest.fixture(scope="module")
-def transactions() -> List[Dict]:
+@pytest.fixture
+def sample_transactions() -> List[Dict]:
+    """Фикстура: список тестовых транзакций."""
     return [
-        {"amount": 100, "currency": "USD"},
-        {"amount": 200, "currency": "EUR"},
-        {"amount": 300, "currency": "USD"},
+        {"amount": 100.0, "currency": "USD", "description": "Обед"},
+        {"amount": 50.0, "currency": "EUR", "description": "Кофе"},
+        {"amount": 200.0, "currency": "USD", "description": "Ужин"},
+        {"amount": 75.5, "currency": "GBP", "description": "Кино"},
+    ]
+
+
+@pytest.fixture
+def usd_transactions(sample_transactions: List[Dict]) -> Generator[Dict[str, float], None, None]:
+    """Фикстура: фильтрованные транзакции в долларах."""
+    return filter_by_currency(sample_transactions, "USD")
+
+
+@pytest.fixture
+def card_numbers() -> List[str]:
+    """Фикстура: предопределенные номера карт для тестирования."""
+    return [
+        "0000 0000 0000 0001",
+        "0000 0000 0000 0002",
+        "9999 9999 9999 9997",
+        "9999 9999 9999 9998",
+        "9999 9999 9999 9999",
     ]
 
 
