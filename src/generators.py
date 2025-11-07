@@ -1,47 +1,76 @@
-from typing import Dict, Generator, List, Optional
+from typing import Dict, List, Iterator, Any
 
 
-def filter_by_currency(transactions: List[Dict[str, float]], currency: str) -> Generator[Dict[str, float], None, None]:
+def filter_by_currency(
+    transactions: List[Dict[str, Any]],
+    currency_code: str
+) -> Iterator[Dict[str, Any]]:
     """
-    Генератор транзакций с заданной валютой.
+    Фильтрует транзакции по коду валюты.
 
-    Аргументы:
-        transactions: Список словарей с транзакциями.
-        currency: Код валюты (например, 'USD').
+    Args:
+        transactions (list): Список словарей, представляющих транзакции.
+        currency_code (str): Код валюты для фильтрации (например, "USD").
 
-    Возвращает:
-        Генератор, поочередно возвращающий совпадающие транзакции.
+    Yields:
+        dict: Транзакция, где валюта операции соответствует заданной.
     """
     for transaction in transactions:
-        if transaction.get("currency") == currency:
+        # Проверяем, что в транзакции есть поле operationAmount
+        if 'operationAmount' not in transaction:
+            continue
+
+        operation_amount = transaction['operationAmount']
+
+        # Проверяем, что в operationAmount есть поле currency
+        if 'currency' not in operation_amount:
+            continue
+
+        currency = operation_amount['currency']
+
+        # Проверяем соответствие кода валюты
+        if currency.get('code') == currency_code:
             yield transaction
 
 
-def transaction_descriptions(transactions: List[Dict[str, Optional[float]]]) -> Generator[str, None, None]:
+def transaction_descriptions(transactions: List[Dict[str, Any]]) -> Iterator[str]:
     """
-    Генератор описаний транзакций.
-
-    Аргументы:
-        transactions: Список словарей с транзакциями.
-
-    Возвращает:
-        Генератор строк с описаниями транзакций.
+    Генератор, возвращающий описания транзакций по очереди.
     """
     for transaction in transactions:
-        description = transaction.get("description", "Описание отсутствует")
-        yield f"Транзакция: {description}"
+        # Проверяем наличие поля description в транзакции
+        if "description" in transaction:
+            yield transaction["description"]
+        else:
+            # Если описание отсутствует, возвращаем строку
+            yield "Описание отсутствует"
 
 
-def card_number_generator(start: int, end: int) -> Generator[str, None, None]:
+def card_number_generator(start: int, end: int) -> Iterator[str]:
     """
-    Генератор банковских карт в формате XXXX XXXX XXXX XXXX.
+    Генератор номеров банковских карт в формате XXXX XXXX XXXX XXXX.
 
-    Аргументы:
-        start: Начальное значение диапазона.
-        end: Конечное значение диапазона.
+    Args:
+        start: Начальное число диапазона.
+        end: Конечное число диапазона, должно быть >= start.
 
-    Возвращает:
-        Генератор строк с номерами карт.
+    Yields:
+        Строка с номером карты в формате "XXXX XXXX XXXX XXXX", где каждая группа — 4 цифры.
+
+    Raises:
+        ValueError: Если start или end вне допустимого диапазона или start > end.
     """
+    # Проверка корректности входных данных
+    if not (1 <= start <= 9999999999999999):
+        raise ValueError("start должен быть в диапазоне от 1 до 9999999999999999")
+    if not (1 <= end <= 9999999999999999):
+        raise ValueError("end должен быть в диапазоне от 1 до 9999999999999999")
+    if start > end:
+        raise ValueError("start не может быть больше end")
+
     for number in range(start, end + 1):
-        yield f"{number:016d}"
+        # Формируем строку из 16 цифр с ведущими нулями
+        num_str = f"{number:016d}"
+        # Разбиваем на группы по 4 цифры и объединяем пробелами
+        formatted = f"{num_str[:4]} {num_str[4:8]} {num_str[8:12]} {num_str[12:16]}"
+        yield formatted
