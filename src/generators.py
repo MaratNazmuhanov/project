@@ -1,45 +1,47 @@
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Optional
 
 
-def filter_by_currency(transactions: List[Dict], currency: str) -> List[Dict]:
-    """Фильтрует транзакции по указанной валюте и возвращает список этих транзакций.
-
-    Аргументы:
-        transactions (List[Dict]): Список транзакций.
-        currency (str): Валюта, по которой фильтруем транзакции.
-
-    Возвращает:
-        List[Dict]: Список транзакций указанной валюты.
+def filter_by_currency(transactions: List[Dict[str, float]], currency: str) -> Generator[Dict[str, float], None, None]:
     """
-    return [transaction for transaction in transactions if transaction["currency"] == currency]
-
-
-def transaction_descriptions(transactions: List[Dict]) -> Generator[str, None, None]:
-    """Возвращает описание каждой операции по очереди.
-    Если транзакция не имеет описания, то выводится 'No description'.
+    Генератор транзакций с заданной валютой.
 
     Аргументы:
-        transactions (List[Dict]): Список транзакций.
+        transactions: Список словарей с транзакциями.
+        currency: Код валюты (например, 'USD').
 
     Возвращает:
-        Generator[str, None, None]: Генератор описаний транзакций.
+        Генератор, поочередно возвращающий совпадающие транзакции.
     """
     for transaction in transactions:
-        yield transaction.get("description", "No description")
+        if transaction.get("currency") == currency:
+            yield transaction
 
 
-def card_number_generator(start: int = 10**15, end: int = 10**16) -> Generator[str, None, None]:
-    """Генерирует номера банковских карт в формате XXXX XXXX XXXX XXXX.
-    Генератор может сгенерировать номера карт в заданном диапазоне от start до end.
+def transaction_descriptions(transactions: List[Dict[str, Optional[float]]]) -> Generator[str, None, None]:
+    """
+    Генератор описаний транзакций.
 
     Аргументы:
-        start (int): Начальное значение для генерации. По умолчанию 10**15.
-        end (int): Конечное значение для генерации. По умолчанию 10**16.
+        transactions: Список словарей с транзакциями.
 
     Возвращает:
-        Generator[str, None, None]: Генератор номеров карт в формате XXXX XXXX XXXX XXXX.
+        Генератор строк с описаниями транзакций.
     """
-    current = start
-    while current < end:
-        yield f"{current:016}"
-        current += 1
+    for transaction in transactions:
+        description = transaction.get("description", "Описание отсутствует")
+        yield f"Транзакция: {description}"
+
+
+def card_number_generator(start: int, end: int) -> Generator[str, None, None]:
+    """
+    Генератор банковских карт в формате XXXX XXXX XXXX XXXX.
+
+    Аргументы:
+        start: Начальное значение диапазона.
+        end: Конечное значение диапазона.
+
+    Возвращает:
+        Генератор строк с номерами карт.
+    """
+    for number in range(start, end + 1):
+        yield f"{number:016d}"

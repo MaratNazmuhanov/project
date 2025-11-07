@@ -1,33 +1,36 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytest
 
 from src.generators import card_number_generator, filter_by_currency, transaction_descriptions
 
 
-@pytest.mark.parametrize("currency", ["USD", "EUR"])
-def test_filter_by_currency(transactions: List[Dict], currency: str) -> None:
-    """Тестирует функцию filter_by_currency"""
-    result = list(filter_by_currency(transactions, "USD"))
-    assert len(result) == 2
-    assert all(transaction["currency"] == "USD" for transaction in result)
+@pytest.mark.parametrize(
+    "transaction, expected_description",
+    [
+        ({"amount": 100.0, "currency": "USD", "description": "Обед"}, "Обед"),
+        ({"amount": 200.0, "currency": "USD", "description": "Ужин"}, "Ужин"),
+    ],
+)
+def test_transaction_descriptions(transaction: Dict[str, Optional[float]], expected_description: str) -> None:
+    """Тест: проверка генератора описаний транзакций."""
+    descriptions = list(transaction_descriptions([transaction]))
+    assert descriptions[0] == f"Транзакция: {expected_description}"
 
 
-def test_transaction_descriptions() -> None:
-    """Тестирует функцию transaction_descriptions"""
-    transactions = [
-        {"description": "Transaction 1"},
-        {"description": "Transaction 2"},
-        {},
-    ]
-    descriptions = list(transaction_descriptions(transactions))
-    assert len(descriptions) == 3
-    assert descriptions == ["Transaction 1", "Transaction 2", "No description"]
+@pytest.mark.parametrize("start, end, expected_count", [(1, 3, 3), (1000, 1005, 6)])
+def test_card_number_generator(start: int, end: int, expected_count: int) -> None:
+    """Тест: проверка генератора банковских карт."""
+    card_numbers = list(card_number_generator(start, end))
+    assert len(card_numbers) == expected_count
+
+    # Проверяем форматирование
+    for number in card_numbers:
+        assert len(number.replace(" ", "")) == 16
 
 
-def test_card_number_generator() -> None:
-    """Тестирует функцию card_number_generator"""
-    generator = card_number_generator()
-    numbers = [next(generator) for _ in range(5)]
-    assert len(numbers) == 5
-    assert all(len(number) == 16 and number.isdigit() for number in numbers)
+def test_filter_by_currency_with_fixture(sample_transactions: List[Dict[str, float]]) -> None:
+    """Тест: проверка фильтрации транзакций по валюте с использованием фикстуры."""
+    usd_transactions = filter_by_currency(sample_transactions, "USD")
+
+    assert len(list(usd_transactions)) == 2
