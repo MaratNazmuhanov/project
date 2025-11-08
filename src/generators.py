@@ -46,8 +46,6 @@ def transaction_descriptions(transactions: list[Dict[str, Any]]) -> Iterator[str
     """
     for transaction in transactions:
         description = transaction.get("description")
-        # Если description есть и не None — возвращаем его
-        # Иначе — пустую строку
         yield "" if description is None else description
 
 

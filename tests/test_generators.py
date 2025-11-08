@@ -4,149 +4,208 @@ import pytest
 
 from src.generators import card_number_generator, filter_by_currency, transaction_descriptions
 
+# --- ТЕСТЫ ДЛЯ transaction_descriptions ---
+
 
 @pytest.mark.parametrize(
-    ("transactions", "expected"),
+    ("transactions,expected"),
     [
-        # Случай 1: нормальные транзакции с описанием
+        # Случай 1: транзакции с description (из sample_transactions)
         (
-            [{"description": "Перевод организации"}, {"description": "Перевод со счета на счет"}],
-            ["Перевод организации", "Перевод со счета на счет"],
+            [
+                {"description": "Оплата услуг"},
+                {"description": "Перевод"},
+                {"description": "Ожидает подтверждения"},
+            ],
+            ["Оплата услуг", "Перевод", "Ожидает подтверждения"],
         ),
-        # Случай 2: транзакции без описания
+        # Случай 2: нет поля description
         (
             [{"id": 1}, {"amount": 100}],
             ["", ""],
         ),
-        # Случай 3: смешанные транзакции
+        # Случай 3: description = None
         (
-            [{"description": "Оплата услуг"}, {"id": 999}, {"description": "Поступление"}],
-            ["Оплата услуг", "", "Поступление"],
+            [{"description": None}, {"description": None}],
+            ["", ""],
         ),
-        # Случай 4: пустой список
-        ([], []),
-        # Случай 5: одна транзакция с описанием
-        ([{"description": "Единственный перевод"}], ["Единственный перевод"]),
-        # Случай 6: одна транзакция без описания
-        ([{"id": 1}], [""]),
-        # Случай 7: полностью пустые словари
-        ([{}, {}, {}], ["", "", ""]),
+        # Случай 4: пустое description
+        (
+            [{"description": ""}, {"description": ""}],
+            ["", ""],
+        ),
+        # Случай 5: смешанный набор (включая транзакции из sample_transactions)
+        (
+            [
+                {"description": "Оплата"},
+                {},
+                {"description": None},
+                {"description": ""},
+                {"note": "без описания"},
+            ],
+            ["Оплата", "", "", "", ""],
+        ),
+        # Случай 6: пустой список
+        (
+            [],
+            [],
+        ),
     ],
 )
 def test_transaction_descriptions_parametrized(
     transactions: List[Dict[str, Any]],
     expected: List[str],
 ) -> None:
-    """
-    Параметризованный тест для функции transaction_descriptions.
-
-    Проверяет различные сценарии:
-    - Нормальные транзакции с описанием
-    - Транзакции без поля description
-    - Смешанные случаи
-    - Пустой список
-    - Одиночные транзакции
-    - Полностью пустые словари
-    """
-    descriptions = transaction_descriptions(transactions)
-    result = list(descriptions)
-
+    """Параметризованный тест для transaction_descriptions."""
+    result: List[str] = list(transaction_descriptions(transactions))
     assert result == expected
 
 
-@pytest.mark.parametrize(
-    ("transactions", "expected_first", "expected_second"),
-    [
-        (
-            [
-                {"description": "Оплата услуг"},
-                {"description": "Без валюты"},
-            ],
-            "Оплата услуг",
-            "Без валюты",
-        ),
-        (
-            [
-                {"description": "Перевод организации"},
-                {"description": "Поступление"},
-            ],
-            "Перевод организации",
-            "Поступление",
-        ),
-    ],
-)
 def test_transaction_descriptions_lazy_evaluation(
-    transactions: List[Dict[str, Any]], expected_first: str, expected_second: str
+    sample_transactions: List[Dict[str, Any]],
 ) -> None:
-    """Тест: ленивая оценка — генератор должен выдавать значения по запросу."""
-    descriptions = transaction_descriptions(transactions)
+    """Тест: ленивая оценка генератора (используем вашу фикстуру)."""
+    gen: Iterator[str] = transaction_descriptions(sample_transactions)
 
-    first = next(descriptions)
-    second = next(descriptions)
+    # Первые 3 транзакции имеют description
+    assert next(gen) == "Оплата услуг"
+    assert next(gen) == "Перевод"
+    assert next(gen) == "Ожидает подтверждения"
+    # 4-я: есть description → "Без суммы"
+    assert next(gen) == "Без суммы"
+    # 5-я: есть description → "Без валюты"
+    assert next(gen) == "Без валюты"
 
-    assert first == expected_first
-    assert second == expected_second
+
+def test_transaction_descriptions_empty_list(
+    empty_transactions: List[Dict[str, Any]],
+) -> None:
+    """Тест: пустой список транзакций (используем фикстуру)."""
+    result: List[str] = list(transaction_descriptions(empty_transactions))
+    assert result == []
 
 
-def test_transaction_descriptions_empty_list(empty_transactions: List[Dict[str, Any]]) -> None:
-    """Тест: пустой список транзакций — должен вернуть пустой итератор."""
-    descriptions = transaction_descriptions(empty_transactions)
-    result = list(descriptions)
-    assert len(result) == 0
+# --- ТЕСТЫ ДЛЯ card_number_generator ---
 
 
 @pytest.mark.parametrize(
-    ("start", "end", "expected"),
+    ("start,end,expected"),
     [
-        # ... другие случаи ...
-        # Случай 3: диапазон с переходом через разряд (корректный)
+        # Случай 1: базовый диапазон 1–3
         (
-            9999999999999998,
-            9999999999999999,  # ← Только до 9 999 999 999 999 999!
+            1,
+            3,
             [
+                "0000 0000 0000 0001",
+                "0000 0000 0000 0002",
+                "0000 0000 0000 0003",
+            ],
+        ),
+        # Случай 2: одно число
+        (
+            1234567890123456,
+            1234567890123456,
+            ["1234 5678 9012 3456"],
+        ),
+        # Случай 3: переход через разряд
+        (
+            9999999999999997,
+            9999999999999999,
+            [
+                "9999 9999 9999 9997",
                 "9999 9999 9999 9998",
                 "9999 9999 9999 9999",
             ],
         ),
+        # Случай 4: минимальное значение
+        (
+            1,
+            1,
+            ["0000 0000 0000 0001"],
+        ),
+        # Случай 5: максимальное значение
+        (
+            9999999999999999,
+            9999999999999999,
+            ["9999 9999 9999 9999"],
+        ),
     ],
 )
-def test_card_number_generator_valid_ranges(start: int, end: int, expected: List[str]) -> None:
+def test_card_number_generator_valid_ranges(
+    start: int,
+    end: int,
+    expected: List[str],
+) -> None:
+    """Параметризованный тест: корректные диапазоны для card_number_generator."""
     generator: Iterator[str] = card_number_generator(start, end)
     result: List[str] = list(generator)
     assert result == expected
 
 
-def test_card_number_generator_empty_range() -> None:
-    """Тест: start > end — должен вызвать ValueError."""
-    with pytest.raises(ValueError, match="start не может быть больше end"):
-        list(card_number_generator(5, 1))
+@pytest.mark.parametrize(
+    ("start,end,error_msg"),
+    [
+        # start < 1
+        (0, 5, "start должен быть в диапазоне от 1 до 9999999999999999"),
+        (-1, 5, "start должен быть в диапазоне от 1 до 9999999999999999"),
+        # end > 9999999999999999
+        (1, 10**16, "end должен быть в диапазоне от 1 до 9999999999999999"),
+        # start > end
+        (5, 1, "start не может быть больше end"),
+    ],
+)
+def test_card_number_generator_invalid_ranges(
+    start: int,
+    end: int,
+    error_msg: str,
+) -> None:
+    """Параметризованный тест: проверка исключений для некорректных диапазонов."""
+    with pytest.raises(ValueError) as excinfo:
+        list(card_number_generator(start, end))
+    assert error_msg in str(excinfo.value)
 
 
-def test_card_number_generator_start_out_of_range() -> None:
-    """Тест: start < 1 — должен вызвать ValueError."""
-    with pytest.raises(ValueError, match="start должен быть в диапазоне"):
-        list(card_number_generator(0, 5))
+def test_card_number_generator_lazy() -> None:
+    """Тест: ленивая генерация (проверка через next)."""
+    generator: Iterator[str] = card_number_generator(1, 3)
+
+    assert next(generator) == "0000 0000 0000 0001"
+    assert next(generator) == "0000 0000 0000 0002"
+    # Проверяем, что генератор не завершается после двух вызовов
+    assert next(generator) == "0000 0000 0000 0003"
+
+    # Убеждаемся, что при исчерпании поднимается StopIteration
+    with pytest.raises(StopIteration):
+        next(generator)
 
 
-def test_card_number_generator_end_out_of_range() -> None:
-    """Тест: end > 9999999999999999 — должен вызвать ValueError."""
-    with pytest.raises(ValueError, match="end должен быть в диапазоне"):
-        list(card_number_generator(1, 10000000000000000))
+def test_card_number_generator_with_fixture(
+    card_numbers: List[str],
+) -> None:
+    """Тест: сравнение с предопределёнными номерами карт из фикстуры."""
+    # Генерируем первые 5 номеров начиная с 1
+    generator: Iterator[str] = card_number_generator(1, 5)
+    result: List[str] = list(generator)
+
+    # Сравниваем только первые 5 элементов (сколько есть в фикстуре)
+    assert result[:5] == card_numbers[:5]
 
 
-def test_card_number_generator_lazy_evaluation() -> None:
-    """Тест: ленивая оценка — генератор должен выдавать значения по запросу."""
-    generator = card_number_generator(1, 3)
+def test_card_number_generator_single_value() -> None:
+    """Тест: генерация одного номера карты."""
+    generator: Iterator[str] = card_number_generator(1234, 1234)
+    result: List[str] = list(generator)
+    assert result == ["0000 0000 0000 1234"]
 
-    # Получаем только первое значение
-    first = next(generator)
-    assert first == "0000 0000 0000 0001"
 
-    # Получаем второе значение
-    second = next(generator)
-    assert second == "0000 0000 0000 0002"
+def test_card_number_generator_max_value() -> None:
+    """Тест: генерация максимального возможного номера."""
+    generator: Iterator[str] = card_number_generator(9999999999999999, 9999999999999999)
+    result: List[str] = list(generator)
+    assert result == ["9999 9999 9999 9999"]
 
-    # Останавливаемся, не запрашивая третье
+
+# --- ТЕСТЫ ДЛЯ filter_by_currency ---
 
 
 def test_filter_usd(sample_transactions: List[Dict[str, Any]]) -> None:
