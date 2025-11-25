@@ -45,10 +45,11 @@ class TestLogDecorator:
     def test_log_success_file(self) -> None:
         """Тест успешного выполнения с записью в файл"""
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tmp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp_file:
             filename = tmp_file.name
 
         try:
+
             @log(filename=filename)
             def test_function(a: str, b: str) -> str:
                 return a + b
@@ -59,7 +60,7 @@ class TestLogDecorator:
             assert result == "Hello, World!"
 
             # Проверяем запись в файл
-            with open(filename, 'r', encoding='utf-8') as f:
+            with open(filename, "r", encoding="utf-8") as f:
                 content = f.read()
                 assert "test_function ok" in content
 
@@ -71,10 +72,11 @@ class TestLogDecorator:
     def test_log_error_file(self) -> None:
         """Тест ошибки с записью в файл"""
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tmp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp_file:
             filename = tmp_file.name
 
         try:
+
             @log(filename=filename)
             def error_function(items: list, index: int) -> Any:
                 return items[index]
@@ -84,7 +86,7 @@ class TestLogDecorator:
                 error_function([1, 2, 3], 10)
 
             # Проверяем запись в файл
-            with open(filename, 'r', encoding='utf-8') as f:
+            with open(filename, "r", encoding="utf-8") as f:
                 content = f.read()
                 assert "error_function error: IndexError" in content
                 assert "Inputs: ([1, 2, 3], 10), {}" in content
@@ -125,16 +127,16 @@ class TestLogDecorator:
             (lambda x, y: x + y, (1, 2), {}, 3, None),  # Успешное выполнение
             (lambda x: x / 0, (5,), {}, None, ZeroDivisionError),  # Ошибка
             (lambda: "constant", (), {}, "constant", None),  # Без аргументов
-        ]
+        ],
     )
     def test_log_parametrized(
-            self,
-            func: Callable[..., Any],
-            args: tuple,
-            kwargs: dict[str, Any],
-            expected_result: Any,
-            expected_error: type[Exception] | None,
-            capsys: pytest.CaptureFixture[str]
+        self,
+        func: Callable[..., Any],
+        args: tuple,
+        kwargs: dict[str, Any],
+        expected_result: Any,
+        expected_error: type[Exception] | None,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         """Параметризованный тест декоратора log"""
 

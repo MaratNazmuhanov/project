@@ -1,8 +1,8 @@
-import functools
 import datetime
+import functools
 from typing import Any, Callable, Optional, TypeVar, cast
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def log(filename: Optional[str] = None) -> Callable[[F], F]:
@@ -32,26 +32,23 @@ def log(filename: Optional[str] = None) -> Callable[[F], F]:
 
                 # Записываем лог
                 if filename:
-                    with open(filename, 'a', encoding='utf-8') as f:
+                    with open(filename, "a", encoding="utf-8") as f:
                         f.write(success_message)
                 else:
-                    print(success_message, end='')
+                    print(success_message, end="")
 
                 return result
 
             except Exception as e:
                 # Формируем сообщение об ошибке
-                error_message = (
-                    f"{timestamp} - {func_name} error: {type(e).__name__}. "
-                    f"Inputs: {args}, {kwargs}\n"
-                )
+                error_message = f"{timestamp} - {func_name} error: {type(e).__name__}. " f"Inputs: {args}, {kwargs}\n"
 
                 # Записываем лог ошибки
                 if filename:
-                    with open(filename, 'a', encoding='utf-8') as f:
+                    with open(filename, "a", encoding="utf-8") as f:
                         f.write(error_message)
                 else:
-                    print(error_message, end='')
+                    print(error_message, end="")
 
                 # Пробрасываем исключение дальше
                 raise
