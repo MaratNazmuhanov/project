@@ -1,26 +1,35 @@
+import logging
+
+logger = logging.getLogger("masks")
+logger.setLevel(logging.DEBUG)
+file_handler = logging.FileHandler("logs/masks.log", mode="w", encoding="utf-8")
+file_handler.setLevel(logging.DEBUG)
+
+file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+file_handler.setFormatter(file_formatter)
+
+logger.addHandler(file_handler)
+
+
 def get_mask_card_number(card_number: str) -> str:
     """
     Маскирует номер банковской карты в формате: XXXX XX** **** XXXX
-
-    Args:
-        card_number: Номер банковской карты (16 цифр, пробелы игнорируются)
-
-    Returns:
-        Маскированный номер карты
-
-    Raises:
-        ValueError: Если номер карты содержит не только цифры или имеет неверную длину
     """
-    # Убираем все пробелы, если есть
+    logger.debug("Начало маскирования номера карты: %s", card_number)
+
     digits = card_number.replace(" ", "")
+    logger.debug("Номер карты после удаления пробелов: %s", digits)
 
-    # Проверка, что строка содержит только цифры
     if not digits.isdigit():
-        raise ValueError("Номер карты должен содержать только цифры")
+        error_msg = "Номер карты должен содержать только цифры"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
-    # Проверка длины номера карты
     if len(digits) != 16:
-        raise ValueError("Номер карты должен содержать 16 цифр")
+        error_msg = "Номер карты должен содержать 16 цифр"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     # Распределяем части
     first_part = digits[:4]  # первые 4 цифры
@@ -32,33 +41,32 @@ def get_mask_card_number(card_number: str) -> str:
 
     # Формируем строку
     masked_card = f"{first_part} {second_part}{middle_mask} {last_part}"
+
+    logger.info("Номер карты успешно замаскирован: %s", masked_card)
     return masked_card
 
 
 def get_mask_account(account_number: str) -> str:
     """
     Маскирует номер счета в формате: **XXXX
-
-    Args:
-        account_number: Номер банковского счета (минимум 20 цифр, пробелы игнорируются)
-
-    Returns:
-        Маскированный номер счета
-
-    Raises:
-        ValueError: Если номер счета содержит не только цифры или имеет неверную длину
     """
-    # Убираем все пробелы, если есть
+    logger.debug("Начало маскирования номера счета: %s", account_number)
+
     digits = account_number.replace(" ", "")
+    logger.debug("Номер счета после удаления пробелов: %s", digits)
 
-    # Проверка, что строка содержит только цифры
     if not digits.isdigit():
-        raise ValueError("Номер счета должен содержать только цифры")
+        error_msg = "Номер счета должен содержать только цифры"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
-    # Проверка длины номера счета
     if len(digits) < 20:
-        raise ValueError("Номер счета должен содержать 20 цифр")
+        error_msg = "Номер счета должен содержать 20 цифр"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     last_four = digits[-4:]
     masked_account = f"**{last_four}"
+
+    logger.info("Номер счета успешно замаскирован: %s", masked_account)
     return masked_account
